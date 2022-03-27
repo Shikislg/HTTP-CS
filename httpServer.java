@@ -12,9 +12,6 @@ import java.util.*;
 public class httpServer extends Thread {
     public static String content;
 
-    static final String HTML_END = "</body>" +
-            "</html>";
-
     Socket connectedClient = null;
     BufferedReader inFromClient = null;
     DataOutputStream outToClient = null;
@@ -46,20 +43,16 @@ public class httpServer extends Thread {
             StringTokenizer tokenizer = new StringTokenizer(headerLine);
             String httpMethod = tokenizer.nextToken();
             String httpQueryString = tokenizer.nextToken();
-            StringBuffer responseBuffer = new StringBuffer();
-            responseBuffer.append("<b> This is the HTTP Server Home Page.... </b><BR>");
-            responseBuffer.append("The HTTP Client request is ....<BR>");
 
             while (inFromClient.ready()) {
                 // Read the HTTP complete HTTP Query
-                responseBuffer.append(requestString + "<BR>");
                 requestString = inFromClient.readLine();
             }
 
             if (httpMethod.equals("GET")) {
                 if (httpQueryString.equals("/")) {
                     // The default home page
-                    sendResponse(200, responseBuffer.toString(), false);
+                    sendResponse(200, null, false);
                 } else {
                     // This is interpreted as a file name
                     String fileName = httpQueryString.replaceFirst("/", "");
@@ -81,10 +74,7 @@ public class httpServer extends Thread {
     public void sendResponse(int statusCode, String responseString, boolean isFile) throws Exception {
 
         String statusLine = null;
-        String serverdetails = "Server: Java HTTPServer";
-        String contentLengthLine = null;
         String fileName = null;
-        String contentTypeLine = "Content-Type: text/html" + "\r\n";
         FileInputStream fin = null;
 
         if (statusCode == 200)
@@ -95,18 +85,11 @@ public class httpServer extends Thread {
         if (isFile) {
             fileName = responseString;
             fin = new FileInputStream(fileName);
-            contentLengthLine = "Content-Length: " + Integer.toString(fin.available()) + "\r\n";
-            if (!fileName.endsWith(".htm") && !fileName.endsWith(".html"))
-                contentTypeLine = "Content-Type: \r\n";
         } else {
-            responseString = httpServer.content + "<br>" + responseString + httpServer.HTML_END;
-            contentLengthLine = "Content-Length: " + responseString.length() + "\r\n";
+            responseString = httpServer.content;
         }
 
         outToClient.writeBytes(statusLine);
-        outToClient.writeBytes(serverdetails);
-        outToClient.writeBytes(contentTypeLine);
-        outToClient.writeBytes(contentLengthLine);
         outToClient.writeBytes("Connection: close\r\n");
         outToClient.writeBytes("\r\n");
 
